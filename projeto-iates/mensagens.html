@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Luxo - Mensagens</title>
+    <link rel="shortcut icon" href="images/barco2.png" type="image/x-icon" />
+    <link rel="stylesheet" href="css/default.css" />
+
+    <style>
+      .nao-visualizada td {
+        font-weight: bold;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+
+      th,
+      td {
+        border: 1px solid #ccc;
+        padding: 8px;
+        text-align: left;
+      }
+
+      th {
+        background-color: #f2f2f2;
+      }
+
+      .acoes button {
+        margin-right: 5px;
+        margin-bottom: 4px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="page">
+      <header>
+        <div id="title">
+          <img src="images/barco1.png" alt="ícone de barco" />
+          <div class="headtitle">
+            <h1>Luxo</h1>
+            <h2>Aluguel de iates</h2>
+          </div>
+        </div>
+
+        <nav>
+          <ul class="navmenu">
+            <li><a href="index.html">Página inicial</a></li>
+            <li><a href="aluguel.html">Aluguel de iates</a></li>
+            <li><a href="destinos.html">Destinos</a></li>
+            <li><a href="tripulacao.html">Tripulação</a></li>
+            <li><a href="contato.html">Contato</a></li>
+          </ul>
+        </nav>
+      </header>
+
+      <main>
+        <div class="pagtitle">
+          <div class="bgtitle"></div>
+          <h2>Mensagens Recebidas</h2>
+        </div>
+
+        <table id="tabela-mensagens">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>E-mail</th>
+              <th>Mensagem</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </main>
+    </div>
+
+    <footer>
+      <p>© 2023 por Luxo aluguel de iates</p>
+    </footer>
+
+    <!-- Scripts obrigatórios -->
+    <script src="js/jquery-3.6.4.min.js"></script>
+<script src="js/api.js"></script>
+
+<script>
+  // Sincroniza API -> LocalStorage (sem perder visualizada/excluida)
+  function sincronizarMensagens() {
+    var mensagensAPI = obterMensagens() || [];
+    var mensagensLocal =
+      JSON.parse(localStorage.getItem("mensagens")) || [];
+
+    // Começa do que já existe localmente (mantém visualizada/excluida)
+    var atualizado = mensagensLocal.slice();
+
+    mensagensAPI.forEach(function (mAPI) {
+      var existente = atualizado.find(function (m) {
+        return (
+          m.nome === mAPI.nome &&
+          m.email === mAPI.email &&
+          m.mensagem === mAPI.mensagem
+        );
+      });
+
+      // Só adiciona se NÃO existe ainda no localStorage
+      if (!existente) {
+        mAPI.visualizada = false;
+        mAPI.excluida = false;
+        atualizado.push(mAPI);
+      }
+    });
+
+    localStorage.setItem("mensagens", JSON.stringify(atualizado));
+    return atualizado;
+  }
+
+  // Exibe as mensagens (mais novas em cima, ignorando excluídas)
+  function carregarMensagens() {
+    var mensagens =
+      JSON.parse(localStorage.getItem("mensagens")) || [];
+
+    var tbody = document.querySelector("#tabela-mensagens tbody");
+    tbody.innerHTML = "";
+
+    for (let i = mensagens.length - 1; i >= 0; i--) {
+      let msg = mensagens[i];
+
+      if (msg.excluida) {
+        continue; // não mostra excluída
+      }
+
+      var tr = document.createElement("tr");
+
+      if (!msg.visualizada) {
+        tr.classList.add("nao-visualizada");
+      }
+
+      var tdNome = document.createElement("td");
+      tdNome.textContent = msg.nome || "";
+      tr.appendChild(tdNome);
+
+      var tdEmail = document.createElement("td");
+      tdEmail.textContent = msg.email || "";
+      tr.appendChild(tdEmail);
+
+      var tdMensagem = document.createElement("td");
+      tdMensagem.textContent = msg.mensagem || "";
+      tr.appendChild(tdMensagem);
+
+      var tdAcoes = document.createElement("td");
+      tdAcoes.className = "acoes";
+
+      var btnVisualizada = document.createElement("button");
+      btnVisualizada.textContent = "MENSAGEM VISUALIZADA";
+      btnVisualizada.className = "button";
+      btnVisualizada.onclick = function () {
+        marcarVisualizada(i);
+      };
+
+      var btnExcluir = document.createElement("button");
+      btnExcluir.textContent = "EXCLUIR MENSAGEM";
+      btnExcluir.className = "button";
+      btnExcluir.onclick = function () {
+        excluirMensagem(i);
+      };
+
+      tdAcoes.appendChild(btnVisualizada);
+      tdAcoes.appendChild(btnExcluir);
+      tr.appendChild(tdAcoes);
+
+      tbody.appendChild(tr);
+    }
+  }
+
+  function marcarVisualizada(indice) {
+    if (!confirm("Marcar esta mensagem como visualizada?")) return;
+
+    var mensagens =
+      JSON.parse(localStorage.getItem("mensagens")) || [];
+
+    if (mensagens[indice]) {
+      mensagens[indice].visualizada = true;
+      localStorage.setItem("mensagens", JSON.stringify(mensagens));
+      carregarMensagens();
+    }
+  }
+
+  function excluirMensagem(indice) {
+    if (!confirm("Deseja realmente excluir esta mensagem?")) return;
+
+    var mensagens =
+      JSON.parse(localStorage.getItem("mensagens")) || [];
+
+    if (mensagens[indice]) {
+      mensagens[indice].excluida = true;
+      localStorage.setItem("mensagens", JSON.stringify(mensagens));
+      carregarMensagens();
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    sincronizarMensagens();
+    carregarMensagens();
+  });
+</script>
+  </body>
+</html>
